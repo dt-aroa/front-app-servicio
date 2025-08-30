@@ -1,0 +1,19 @@
+/*@import "./_tailwind.css";
+@import "./_global.css";
+@import "./_custom.css";
+
+/* Aplicar las capas de los CSS */
+/*
+@layer tailwind-base, primevue, tailwind-utilities, global;
+
+*/
+
+/* src/assets/css/app.css */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Agrega aquí tus estilos globales y personalizados */
+@import "./_global.css";
+@import "./_custom.css";

@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+body {
+    //padding: 2rem;
+    /*font-family: Arial, Helvetica, sans-serif;*/
+}
+
+:root {
+  font-family: 'Inter', sans-serif;
+}
+
+@supports (font-variation-settings: normal) {
+  :root {
+    font-family: 'Inter var', sans-serif;
+  }
+}
+
+html, body {
+  font-family: 'Inter var', 'Inter', sans-serif;
+}
