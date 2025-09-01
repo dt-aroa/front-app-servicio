@@ -20,14 +20,14 @@ const items = ref([
     label: "Listado de mis PQRS",
     icon: "pi pi-list",
     command: () => {
-      router.push({ name: 'pqrs.list' });
+      router.push({ name: 'pharmasan.siau.pqrs.inicio' });
     },
   },
   {
     label: "Crear PQRS",
     icon: "pi pi-plus",
     command: () => {
-      console.log("Ir a crear PQRS");
+      router.push({ name: 'pharmasan.siau.pqrs.crear-pqrs' });
     },
   },
   {

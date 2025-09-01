@@ -18,9 +18,17 @@ const routes = [
       {
         path: 'inicio',
         name: 'pharmasan.siau.pqrs.inicio',
-        component: () => import('@/views/pages/home/home.vue'),
+        component: () => import('@/views/pages/pqrs/home.vue'),
         meta: {
           title: 'Inicio',
+        },
+      },
+      {
+        path: 'crear-pqrs',
+        name: 'pharmasan.siau.pqrs.crear-pqrs',
+        component: () => import('@/views/pages/pqrs/crear.vue'),
+        meta: {
+          title: 'Crear PQRS',
         },
       },
       // Rutas de error
