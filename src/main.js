@@ -109,9 +109,18 @@ import router from './router' // Importa el archivo del router que acabas de cre
 import { createPinia } from "pinia"
 
 
+const localeEs = {
+  firstDayOfWeek: 1,
+  dayNames: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+  dayNamesShort: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+  dayNamesMin: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
+  monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+  monthNamesShort: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+  today: 'Hoy',
+  clear: 'Limpiar'
+};
 
-// Import PrimeIcons if you need them
-import 'primeicons/primeicons.css';
+//import 'primeicons/primeicons.css';
 
 import Lara from '@primevue/themes/lara';
 
@@ -123,7 +132,8 @@ app.use(PrimeVue, {
       dark: false,
       darkModeSelector: 'none' // o 'class' si luego quieres dark/light toggle
     }
-  }
+  },
+  locale: localeEs
 });
 
 app.use(router)

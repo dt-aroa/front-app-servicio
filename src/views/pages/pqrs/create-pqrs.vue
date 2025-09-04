@@ -7,7 +7,18 @@ import Calendar from 'primevue/calendar';
 import FileUpload from 'primevue/fileupload';
 import Textarea from 'primevue/textarea';
 import { useRouter } from 'vue-router';
-import Dialog from 'primevue/dialog'
+import InputMask from 'primevue/inputmask'
+import { useAuthStore } from '@/stores/auth/auth.store'
+import PqrsService from '@/services/pqrs/pqrs.service.js'
+
+
+const _PqrsService = new PqrsService()
+const router = useRouter()
+
+//precarga de datos del usuario
+
+const _authStore = useAuthStore()
+const people = _authStore.getPeople
 
 
 // Variables para guardar los datos de la API
@@ -17,35 +28,47 @@ const typeRequests = ref([]);
 const municipios = ref([]);
 const clasificaciones = ref([]);
 const adjuntosRef = ref([])
+const departamentos_remitente = ref([]);
+const municipios_remitente = ref([]);
+const supersaludOptions = ref(['Si', 'No']);
+const regimenOptions = ref(['Contributivo', 'Subsidiado']);
 
-const api = `${import.meta.env.VITE_VUE_APP_MICROSERVICE_API_SERVICIOALCLIENTE}`
+const cardcode = ref(_authStore._user.cardcode || '')
+const user_id = ref(_authStore._user.id || '')
 
-console.warn("API URL:", api);
 
 //validación email
 const emailError = ref('');
+const emailRemitenteError = ref('');
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const loading = ref(false);
 
-// Función para validar el correo
-const validateEmail = () => {
-  if (formData.email && !emailRegex.test(formData.email)) {
-    emailError.value = 'Por favor, ingresa un correo electrónico válido.';
-  } else {
-    emailError.value = '';
-  }
-};
+const validateEmail = (val) =>
+  val && !emailRegex.test(val) ? 'Por favor, ingresa un correo electrónico válido.' : ''
 
-// Función para traer los datos de la API
+const onEmailBlur = () => {
+  emailError.value = validateEmail(formData.email)
+}
+
+const onRemitenteBlur = () => {
+  emailRemitenteError.value = validateEmail(formData.request_sender_email)
+}
+
+
+// Función para traer los datos iniciales para crear PQRS
 const fetchData = async () => {
+
   loading.value = true;
   try {
-    const response = await fetch(`${api}/crear/crear-pqrs`);
-    const data = await response.json();
-    departamentos.value = data.departamentos;
-    typeIdentifications.value = data.typeIdentifications;
-    typeRequests.value = data.typeRequests;
+    const response = await _PqrsService.getCrearPqrs()
+    if (response.status !== 200) {
+      throw new Error(`Error al obtener información: ${response.statusText}`);
+    }
+    departamentos.value = response.data.departamentos;
+    departamentos_remitente.value = response.data.departamentos;
+    typeIdentifications.value = response.data.typeIdentifications;
+    typeRequests.value = response.data.typeRequests;
   } catch (error) {
     console.error("Error al obtener los datos de la API:", error);
   } finally {
@@ -53,10 +76,15 @@ const fetchData = async () => {
   }
 };
 
-const supersaludOptions = ref(['Si', 'No']);
-
 // Estado del formulario
 const formData = reactive({
+
+  //Info remitente
+  request_sender_email: people?.email?.trim?.() ?? '',
+  request_sender_phone: people?.telefono?.trim?.() ?? '',
+  request_sender_name: (people?.full_name ?? p?.name ?? '').trim?.() ?? '',
+
+  //Info paciente
   type_identification: null,
   identification_number: '',
   first_name: '',
@@ -70,8 +98,6 @@ const formData = reactive({
   mobile_number_2: '',
   address: '',
   email: '',
-  eps: null,
-  regimen_ov: '',
 });
 
 const errors = reactive({});
@@ -98,69 +124,116 @@ const sanitizeDateISO = (v) => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
+function sanitizeDateTime(value) {
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(+d)) return '';
+  const pad = n => String(n).padStart(2, '0');
+
+  const year = d.getFullYear();
+  const month = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  const hour = pad(d.getHours());
+  const min = pad(d.getMinutes());
+  const sec = pad(d.getSeconds());
+
+  return `${year}-${month}-${day} ${hour}:${min}:${sec}`;
+}
+
 const handleSubmit = async () => {
+
+  /*
   // Lógica de validación
+
+  //Info remitente requeridos
+  errors.request_sender_email = !formData.request_sender_email ? 'Campo requerido.' : '';
+  errors.request_sender_phone = !formData.request_sender_phone ? 'Campo requerido.' : '';
+  errors.request_sender_name = !formData.request_sender_name ? 'Campo requerido.' : '';
+
+  //Info pacientes requeridos
   errors.type_identification = !formData.type_identification ? 'Campo requerido.' : '';
   errors.identification_number = !formData.identification_number ? 'Campo requerido.' : '';
   errors.first_name = !formData.first_name ? 'Campo requerido.' : '';
   errors.last_name = !formData.last_name ? 'Campo requerido.' : '';
-  errors.departamentos = !formData.departamentos ? 'Campo requerido.' : '';
-  errors.municipios = !formData.municipios ? 'Campo requerido.' : '';
+  errors.departamento_id = !formData.departamento_id ? 'Campo requerido.' : '';
+  errors.municipio_id = !formData.municipio_id ? 'Campo requerido.' : '';
   errors.mobile_number = !formData.mobile_number ? 'Campo requerido.' : '';
+
+  //Info solicitud requeridos
   errors.type_request = !formData.type_request ? 'Campo requerido.' : '';
   errors.type_classification = !formData.type_classification ? 'Campo requerido.' : '';
   errors.description_request = !formData.description_request ? 'Campo requerido.' : '';
   errors.supersalud = !formData.supersalud ? 'Campo requerido.' : '';
   errors.date_request = !formData.date_request ? 'Campo requerido.' : '';
 
-  /* Verificar si hay errores
-  const hasErrors = Object.values(errors).some(error => error !== '');
+  //Verificar si hay errores de validacion
+  //const hasErrors = Object.values(errors).some(error => error !== '');
   //const hasErrors = Object.values(errors.value).some(error => error !== '') || emailError.value;
+
+  const hasErrors =
+    Object.values(errors).some(Boolean) ||
+    !!emailError.value ||
+    !!emailRemitenteError.value
 
   if (hasErrors) {
     console.error('Formulario con errores de validación.');
     return;
   }
-*/
+  */
+
   loading.value = true;
   serverError.value = '';
 
   try {
 
     const form = new FormData();
-    // Campos de texto
+
+    //campos de texto remitente
+    form.append('cardcode', sanitizeText(cardcode.value));
+    form.append('user_id', sanitizeText(user_id.value));
+
+    form.append('request_sender_email', sanitizeText(formData.request_sender_email));
+    form.append('request_sender_phone', sanitizePhone(formData.request_sender_phone));
+    form.append('request_sender_name', sanitizeText(formData.request_sender_name));
+    form.append('request_sender_cargo', sanitizeText(formData.request_sender_cargo));
+    form.append('departamento_remitente_id', sanitizeText(formData.departamento_remitente_id));
+    form.append('municipio_remitente_id', sanitizeText(formData.municipio_remitente_id));
+    form.append('request_sender_number', sanitizeText(formData.request_sender_number));
+
+    // Campos de texto paciente
     form.append('type_identification', sanitizeText(formData.type_identification));
     form.append('identification_number', sanitizeText(formData.identification_number));
     form.append('first_name', sanitizeText(formData.first_name));
+    form.append('second_name', sanitizeText(formData.second_name));
     form.append('last_name', sanitizeText(formData.last_name));
-    form.append('departamentos', sanitizeText(formData.departamentos));
-    form.append('municipios', sanitizeText(formData.municipios));
+    form.append('second_surname', sanitizeText(formData.second_surname));
+
+    form.append('phone_number', sanitizePhone(formData.phone_number));
     form.append('mobile_number', sanitizePhone(formData.mobile_number));
+
+    form.append('address', sanitizeText(formData.address));
+    form.append('email', sanitizeText(formData.email));
+    form.append('departamento_id', sanitizeText(formData.departamento_id));
+    form.append('municipio_id', sanitizeText(formData.municipio_id));
+    form.append('regimen', sanitizeText(formData.regimen));
+
     form.append('type_request', sanitizeText(formData.type_request));
     form.append('type_classification', sanitizeText(formData.type_classification));
+    form.append('supersalud', formData.supersalud);
+    form.append('date_request', sanitizeDateTime(formData.date_request));
     form.append('description_request', sanitizeText(formData.description_request));
-    form.append('supersalud', formData.supersalud ? '1' : '0');
-    form.append('date_request', sanitizeDateISO(formData.date_request));
 
     // Archivos: asumiendo que los guardas en un ref `adjuntosRef`
     adjuntosRef.value.forEach(file => form.append('adjuntos[]', file, file.name));
 
+    const result = await _PqrsService.createPqrs(form);
 
-    const res = await fetch(`${api}/store-pqrs`, {
+    console.log('Resultado de la creación de PQRS:', result);
+/*
+    const res = await fetch(`${api}`, {
       method: 'POST',
       body: form // fetch pone automáticamente Content-Type: multipart/form-data
     });
-
-    /*
-    if (!res.ok) throw new Error(`Error ${res.status}`);
-
-    const data = await res.json();
-    console.log('PQRS creada:', data);
-
-    Object.keys(formData).forEach(k => (formData[k] = null));
-    adjuntosRef.value = [];
-    */
-
+*/
   } catch (error) {
     console.error('Error al enviar el formulario:', error);
     serverError.value = 'Ocurrió un error al crear la PQRS. Inténtalo de nuevo.';
@@ -169,28 +242,45 @@ const handleSubmit = async () => {
   }
 };
 
-
-const router = useRouter();
-
 // Función que se llama al hacer clic en el botón "Cancelar"
 const cancelRequest = () => {
-  // Aquí usamos el router para navegar a la ruta deseada por su nombre
   router.push({ name: 'pharmasan.siau.pqrs.inicio' });
 };
 
+// Función que se activa al cambiar el departamento del remitente
+const onDepartamentoRemitenteChange = async (event) => {
 
+  const departamentoRemitenteId = event.value;
+  formData.municipio_remitente_id = null;
+  municipios_remitente.value = [];
+
+  if (departamentoRemitenteId) {
+    try {
+      const response = await _PqrsService.getMunicipios(departamentoRemitenteId)
+      if (response.status !== 200) {
+        throw new Error(`Error al obtener los municipios: ${response.statusText}`);
+      }
+      municipios_remitente.value = response.data.municipios;
+    } catch (error) {
+      console.error("Error al obtener los municipios:", error);
+    }
+  }
+};
+
+// Función que se activa al cambiar el departamento del remitente
 const onDepartamentoChange = async (event) => {
-  const departamentoId = event.value;
 
+  const departamentoId = event.value;
   formData.municipio_id = null;
   municipios.value = [];
 
   if (departamentoId) {
-    const url = `${api}/municipios/${departamentoId}`;
     try {
-      const response = await fetch(url);
-      const data = await response.json();
-      municipios.value = data.municipios;
+      const response = await _PqrsService.getMunicipios(departamentoId)
+      if (response.status !== 200) {
+        throw new Error(`Error al obtener los municipios: ${response.statusText}`);
+      }
+      municipios.value = response.data.municipios;
     } catch (error) {
       console.error("Error al obtener los municipios:", error);
     }
@@ -199,24 +289,35 @@ const onDepartamentoChange = async (event) => {
 
 // Función que se activa al cambiar el tipo de solicitud
 const onTypeRequestChange = async (event) => {
+  
   const typeRequestId = event.value;
-
   // Limpiamos la selección de la clasificación y sus opciones
   formData.type_classification = null;
   clasificaciones.value = [];
 
   if (typeRequestId) {
-    // Construimos la URL para obtener las clasificaciones, asumiendo una ruta
-    const url = `${api}/clasificaciones/${typeRequestId}`;
     try {
-      const response = await fetch(url);
-      const data = await response.json();
-      clasificaciones.value = data.clasificaciones; // Asumimos que la API retorna un array "clasificaciones"
+      const response = await _PqrsService.getClasificaciones(typeRequestId)
+      if (response.status !== 200) {
+        throw new Error(`Error al obtener las clasificaciones: ${response.statusText}`);
+      }
+      clasificaciones.value = response.data.clasificaciones; // Asumimos que la API retorna un array "clasificaciones"
     } catch (error) {
       console.error("Error al obtener las clasificaciones:", error);
     }
   }
 };
+
+
+function onFileSelect(event) {
+  // PrimeVue FileUpload dispara @select con { files }
+  adjuntosRef.value.push(...event.files)
+}
+
+function onFileRemove(event) {
+  // Borra el archivo que se eliminó
+  adjuntosRef.value = adjuntosRef.value.filter(f => f !== event.file)
+}
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },     // v-model:visible
@@ -289,6 +390,80 @@ onMounted(() => {
       <form @submit.prevent="handleSubmit">
         <div class="mb-8">
           <h4 class="text-xl font-bold text-blue-400 mb-4">
+            Información del Remitente
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="request_sender_email" class="block text-gray-900mb-2">Email Remitente:
+                <span class="text-red-400">*</span>
+              </label>
+              <InputText id="request_sender_email" v-model.trim="formData.request_sender_email" @blur="onRemitenteBlur"
+                placeholder="Email Remitente" class="w-full" :class="{ 'p-invalid': emailRemitenteError }" />
+              <small v-if="emailRemitenteError" class="text-red-400">
+                {{ emailRemitenteError }}
+              </small>
+              <small v-if="errors.request_sender_email" class="text-red-400">{{
+                errors.request_sender_email
+              }}</small>
+            </div>
+            <div>
+              <label for="request_sender_phone" class="block text-gray-900mb-2">Teléfono Remitente:
+                <span class="text-red-400">*</span>
+              </label>
+              <InputMask id="request_sender_phone" v-model.trim="formData.request_sender_phone"
+                placeholder="Teléfono Remintente" mask="999 999 9999" unmask :pt="{ input: { inputmode: 'numeric' } }"
+                class="w-full" :class="{ 'p-invalid': errors.request_sender_phone }" />
+              <small v-if="errors.request_sender_phone" class="text-red-400">{{
+                errors.request_sender_phone
+              }}</small>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <label for="request_sender_name" class="block text-gray-900mb-2">Nombre Remitente: <span
+                  class="text-red-400">*</span></label>
+              <InputText id="request_sender_name" v-model.trim="formData.request_sender_name"
+                placeholder="Nombre Remitente" class="w-full" :class="{ 'p-invalid': errors.request_sender_name }" />
+              <small v-if="errors.request_sender_name" class="text-red-400">{{
+                errors.request_sender_name
+              }}</small>
+            </div>
+            <div>
+              <label for="request_sender_cargo" class="block text-gray-900mb-2">Cargo:</label>
+              <InputText id="request_sender_cargo" v-model.trim="formData.request_sender_cargo" placeholder="Cargo"
+                class="w-full" />
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <label for="departamentos_remitente" class="block text-gray-900mb-2">Departamento del Remitente: <span
+                  class="text-red-400">*</span></label>
+              <Dropdown id="departamentos_remitente" v-model="formData.departamento_remitente_id"
+                :options="departamentos_remitente" optionLabel="departamento_name" optionValue="departamento_id"
+                placeholder="Seleccione un departamento" @change="onDepartamentoRemitenteChange" class="w-full"
+                :class="{ 'p-invalid': errors.departamentosRemitente }" />
+            </div>
+            <div>
+              <label for="municipios_remitente" class="block text-gray-900mb-2">Municipio Remitente: <span
+                  class="text-red-400">*</span></label>
+              <Dropdown id="municipios_remitente" v-model="formData.municipio_remitente_id"
+                :options="municipios_remitente" optionLabel="municipio_name" optionValue="municipio_id"
+                placeholder="Seleccione un municipio" class="w-full" :disabled="!formData.departamento_remitente_id"
+                :class="{ 'p-invalid': errors.municipiosRemitente }" />
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <div>
+                <label for="request_sender_number" class="block text-gray-900mb-2">Núm. Radicado:</label>
+                <InputText id="request_sender_number" v-model.trim="formData.request_sender_number"
+                  placeholder="Núm. Radicado" class="w-full" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mb-8">
+          <h4 class="text-xl font-bold text-blue-400 mb-4">
             Información del Paciente
           </h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -346,6 +521,37 @@ onMounted(() => {
                 class="w-full" />
             </div>
           </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+            <div>
+              <label for="phone_number" class="block text-gray-900mb-2">Teléfono Fijo:</label>
+              <InputText id="phone_number" v-model.trim="formData.phone_number" placeholder="Teléfono fijo"
+                class="w-full" />
+            </div>
+            <div>
+              <label for="mobile_number" class="block text-gray-900mb-2">Celular: <span
+                  class="text-red-400">*</span></label>
+              <InputMask id="mobile_number" v-model.trim="formData.mobile_number" placeholder="Número de celular"
+                mask="999 999 9999" unmask :pt="{ input: { inputmode: 'numeric' } }" class="w-full"
+                :class="{ 'p-invalid': errors.mobile_number }" />
+              <small v-if="errors.mobile_number" class="text-red-400">{{
+                errors.mobile_number
+              }}</small>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <label for="address" class="block text-gray-900mb-2">Dirección:</label>
+              <InputText id="address" v-model.trim="formData.address" placeholder="Dirección" class="w-full" />
+            </div>
+            <div>
+              <label for="email" class="block text-gray-900mb-2">Correo Electrónico:</label>
+              <InputText id="email" v-model.trim="formData.email" @blur="onEmailBlur" placeholder="Correo electrónico"
+                class="w-full" :class="{ 'p-invalid': emailError }" />
+              <small v-if="emailError" class="text-red-400">
+                {{ emailError }}
+              </small>
+            </div>
+          </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <div>
               <label for="departamentos" class="block text-gray-900mb-2">Departamento: <span
@@ -368,39 +574,14 @@ onMounted(() => {
               }}</small>
             </div>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-            <div>
-              <label for="phone_number" class="block text-gray-900mb-2">Teléfono Fijo:</label>
-              <InputText id="phone_number" v-model.trim="formData.phone_number" placeholder="Teléfono fijo"
-                class="w-full" />
-            </div>
-            <div>
-              <label for="mobile_number" class="block text-gray-900mb-2">Celular: <span
-                  class="text-red-400">*</span></label>
-              <InputText id="mobile_number" v-model.trim="formData.mobile_number" placeholder="Número de celular"
-                class="w-full" :class="{ 'p-invalid': errors.mobile_number }" />
-              <small v-if="errors.mobile_number" class="text-red-400">{{
-                errors.mobile_number
-              }}</small>
-            </div>
-            <div>
-              <label for="mobile_number_2" class="block text-gray-900mb-2">Celular 2:</label>
-              <InputText id="mobile_number_2" v-model.trim="formData.mobile_number_2" placeholder="Número de celular 2"
-                class="w-full" />
-            </div>
-          </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <div>
-              <label for="address" class="block text-gray-900mb-2">Dirección:</label>
-              <InputText id="address" v-model.trim="formData.address" placeholder="Dirección" class="w-full" />
-            </div>
-            <div>
-              <label for="email" class="block text-gray-900mb-2">Correo Electrónico:</label>
-              <InputText id="email" v-model.trim="formData.email" @blur="validateEmail" placeholder="Correo electrónico"
-                class="w-full" :class="{ 'p-invalid': emailError }" />
-              <small v-if="emailError" class="text-red-400">
-                {{ emailError }}
-              </small>
+              <label for="regimen" class="block text-gray-900mb-2">Régimen: <span class="text-red-400">*</span></label>
+              <Dropdown id="regimen" v-model="formData.regimen" :options="regimenOptions"
+                placeholder="Seleccione una opción" class="w-full" :class="{ 'p-invalid': errors.regimen }" />
+              <small v-if="errors.regimen" class="text-red-400">{{
+                errors.regimen
+              }}</small>
             </div>
           </div>
         </div>
@@ -502,12 +683,8 @@ onMounted(() => {
                 </div>
               </div>
             </template>
-
           </FileUpload>
-
-
         </div>
-
         <div class="flex justify-end gap-x-4 mt-8">
           <Button label="Cancelar" severity="secondary" icon="pi pi-times"
             class="py-2 font-semibold rounded-lg bg-gradient-to-r from-gray-900 to-gray-400 border-0 hover:from-gray-900 hover:to-gray-500"

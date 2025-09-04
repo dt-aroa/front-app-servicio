@@ -18,7 +18,7 @@ const routes = [
       {
         path: 'inicio',
         name: 'pharmasan.siau.pqrs.inicio',
-        component: () => import('@/views/pages/pqrs/home.vue'),
+        component: () => import('@/views/pages/pqrs/list-pqrs.vue'),
         meta: {
           title: 'Inicio',
         },
@@ -26,9 +26,17 @@ const routes = [
       {
         path: 'crear-pqrs',
         name: 'pharmasan.siau.pqrs.crear-pqrs',
-        component: () => import('@/views/pages/pqrs/crear.vue'),
+        component: () => import('@/views/pages/pqrs/create-pqrs.vue'),
         meta: {
           title: 'Crear PQRS',
+        },
+      },
+      {
+        path: 'import-pqrs',
+        name: 'pharmasan.siau.pqrs.import-pqrs',
+        component: () => import('@/views/pages/pqrs/import-pqrs.vue'),
+        meta: {
+          title: 'Importación Archivo PQRS',
         },
       },
       // Rutas de error
