@@ -99,6 +99,7 @@ import { createApp } from 'vue';
 
 import App from './App.vue';
 import PrimeVue from 'primevue/config';
+import 'primeicons/primeicons.css';
 
 
 // New way to import themes in PrimeVue 4

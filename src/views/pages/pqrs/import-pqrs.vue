@@ -21,190 +21,166 @@ const pageTitle = ref('Importación de Solicitudes PQRS');
 const loading = ref(false);
 const success = ref(false);
 const errors = ref([]);
-
-// Datos para el dropdown de compañías
-const selectedCompany = ref(0);
-const companies = ref([
-  { name: 'PHARMASAN', code: 0 },
-  { name: 'PHARMEDIS', code: 1 },
-]);
-
-
-// Lógica de la tabla de campos
-const excelFields = ref([
-  { name: 'TIPO REMITENTE', condition: 'Obligatorio', description: 'Tipo de remitente de la solicitud PQRS...' },
-  { name: 'REMITENTE', condition: 'Obligatorio', description: 'Nombre del remitente...' },
-  // ... Agrega el resto de los campos aquí ...
-]);
-
-/*
 const _PqrsService = new PqrsService()
-const router = useRouter()
 
-//precarga de datos del usuario
 
 const _authStore = useAuthStore()
-const people = _authStore.getPeople
-
-
-// Variables para guardar los datos de la API
-const departamentos = ref([]);
-const typeIdentifications = ref([]);
-const typeRequests = ref([]);
-const municipios = ref([]);
-const clasificaciones = ref([]);
-const adjuntosRef = ref([])
-const departamentos_remitente = ref([]);
-const municipios_remitente = ref([]);
-const supersaludOptions = ref(['Si', 'No']);
-const regimenOptions = ref(['Contributivo', 'Subsidiado']);
-
 const cardcode = ref(_authStore._user.cardcode || '')
 const user_id = ref(_authStore._user.id || '')
+const people = _authStore.getPeople
 
-
-//validación email
-const emailError = ref('');
-const emailRemitenteError = ref('');
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const loading = ref(false);
-
-const validateEmail = (val) =>
-  val && !emailRegex.test(val) ? 'Por favor, ingresa un correo electrónico válido.' : ''
-
-const onEmailBlur = () => {
-  emailError.value = validateEmail(formData.email)
-}
-
-const onRemitenteBlur = () => {
-  emailRemitenteError.value = validateEmail(formData.request_sender_email)
-}
-
-
-// Función para traer los datos iniciales para crear PQRS
-const fetchData = async () => {
-
-  loading.value = true;
+const downloadExcelTemplate = async () => {
   try {
-    const response = await _PqrsService.getCrearPqrs()
-    if (response.status !== 200) {
-      throw new Error(`Error al obtener información: ${response.statusText}`);
-    }
-    departamentos.value = response.data.departamentos;
-    departamentos_remitente.value = response.data.departamentos;
-    typeIdentifications.value = response.data.typeIdentifications;
-    typeRequests.value = response.data.typeRequests;
-  } catch (error) {
-    console.error("Error al obtener los datos de la API:", error);
-  } finally {
-    loading.value = false;
+    const { data, status, headers } = await _PqrsService.getDownloadTemplate(); // Axios response
+
+    if (status !== 200) throw new Error(`HTTP ${status}`);
+
+    const contentType = headers['content-type'] || 'application/octet-stream';
+    const dispo = headers['content-disposition'] || '';
+
+    let filename = 'plantilla_pqrs.xlsx';
+    const m = dispo.match(/filename\*?=(?:UTF-8'')?("?)([^"]+)\1/i);
+    if (m && m[2]) filename = decodeURIComponent(m[2]);
+
+    const blob = data instanceof Blob ? data : new Blob([data], { type: contentType });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    console.error('Error al descargar plantilla:', e);
   }
 };
 
-// Estado del formulario
-const formData = reactive({
+const file = ref(null)
+const fileInput = ref(null)
 
-  //Info remitente
-  request_sender_email: people?.email?.trim?.() ?? '',
-  request_sender_phone: people?.telefono?.trim?.() ?? '',
-  request_sender_name: (people?.full_name ?? p?.name ?? '').trim?.() ?? '',
-
-  //Info paciente
-  type_identification: null,
-  identification_number: '',
-  first_name: '',
-  second_name: '',
-  last_name: '',
-  second_surname: '',
-  departamentos: null,
-  municipios: null,
-  phone_number: '',
-  mobile_number: '',
-  mobile_number_2: '',
-  address: '',
-  email: '',
-});
-
-const errors = reactive({});
-const serverError = ref('');
-
-
-const sanitizeText = (v) => {
-  if (v == null) return ''
-  // elimina etiquetas simples y normaliza espacios
-  return String(v).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
-}
-
-const sanitizePhone = (v) => {
-  if (!v) return ''
-  // deja +, dígitos y espacios
-  return String(v).replace(/[^\d+\s]/g, '').trim()
-}
-
-const sanitizeDateISO = (v) => {
-  if (!v) return ''
-  const d = typeof v === 'string' ? new Date(v) : v
-  if (isNaN(d)) return ''
-  const pad = (n) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-}
-
-function sanitizeDateTime(value) {
-  const d = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(+d)) return '';
-  const pad = n => String(n).padStart(2, '0');
-
-  const year = d.getFullYear();
-  const month = pad(d.getMonth() + 1);
-  const day = pad(d.getDate());
-  const hour = pad(d.getHours());
-  const min = pad(d.getMinutes());
-  const sec = pad(d.getSeconds());
-
-  return `${year}-${month}-${day} ${hour}:${min}:${sec}`;
-}
-
-const handleSubmit = async () => {
-
-  /*
-  // Lógica de validación
-
-  //Info remitente requeridos
-  errors.request_sender_email = !formData.request_sender_email ? 'Campo requerido.' : '';
-  errors.request_sender_phone = !formData.request_sender_phone ? 'Campo requerido.' : '';
-  errors.request_sender_name = !formData.request_sender_name ? 'Campo requerido.' : '';
-
-  //Info pacientes requeridos
-  errors.type_identification = !formData.type_identification ? 'Campo requerido.' : '';
-  errors.identification_number = !formData.identification_number ? 'Campo requerido.' : '';
-  errors.first_name = !formData.first_name ? 'Campo requerido.' : '';
-  errors.last_name = !formData.last_name ? 'Campo requerido.' : '';
-  errors.departamento_id = !formData.departamento_id ? 'Campo requerido.' : '';
-  errors.municipio_id = !formData.municipio_id ? 'Campo requerido.' : '';
-  errors.mobile_number = !formData.mobile_number ? 'Campo requerido.' : '';
-
-  //Info solicitud requeridos
-  errors.type_request = !formData.type_request ? 'Campo requerido.' : '';
-  errors.type_classification = !formData.type_classification ? 'Campo requerido.' : '';
-  errors.description_request = !formData.description_request ? 'Campo requerido.' : '';
-  errors.supersalud = !formData.supersalud ? 'Campo requerido.' : '';
-  errors.date_request = !formData.date_request ? 'Campo requerido.' : '';
-
-  //Verificar si hay errores de validacion
-  //const hasErrors = Object.values(errors).some(error => error !== '');
-  //const hasErrors = Object.values(errors.value).some(error => error !== '') || emailError.value;
-
-  const hasErrors =
-    Object.values(errors).some(Boolean) ||
-    !!emailError.value ||
-    !!emailRemitenteError.value
-
-  if (hasErrors) {
-    console.error('Formulario con errores de validación.');
-    return;
+const onFileChange = (event) => {
+  const picked = event.target.files[0]
+  if (picked) {
+    file.value = picked
   }
-  */
+}
+
+const validateImport = async () => {
+  if (!file.value) {
+    alert('Debe seleccionar un archivo Excel primero')
+    return
+  }
+
+  const formData = new FormData()
+  //campos de texto remitente
+  formData.append('cardcode', (cardcode.value));
+  formData.append('user_id', (user_id.value));
+  formData.append('file_excel_import', file.value)
+
+  try {
+    const res = await fetch('http://localhost:3035/api/pqrs/importPQRS', {
+      method: 'POST',
+      body: formData,
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const data = await res.json()
+    console.log('Validación OK:', data)
+    alert('Validación completada correctamente')
+  } catch (err) {
+    console.error(err)
+    alert('Error al validar importación')
+  }
+}
+
+/*
+// Datos de ejemplo (ajusta a tu fuente real)
+const companies = ref([
+  { code: 0, name: 'PHARMASAN' },
+  { code: 1, name: 'PHARMEDIS' },
+])
+const selectedCompany = ref(null)
+
+const uploader = ref(null)
+const file = ref(null)
+
+const selectedCompanyLabel = computed(() => {
+  if (!selectedCompany.value) return 'Sin compañía seleccionada'
+  const c = companies.value.find(x => x.code === selectedCompany.value)
+  return c ? `Compañía: ${c.name}` : 'Sin compañía seleccionada'
+})
+
+const canValidate = computed(() => !!file.value /* && selectedCompany.value !== null */
+
+/*
+
+// Helpers
+const prettyBytes = (bytes) => {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
+}
+
+const validExtension = (name) => /\.(xlsx|xls)$/i.test(name)
+
+// Eventos
+const onSelect = (e) => {
+  const f = e.files?.[0]
+  if (!f) return
+
+  // Validaciones
+  if (!validExtension(f.name)) {
+    alert('Formato inválido. Debe ser .xls o .xlsx')
+    // Limpia selección UI
+    uploader.value?.clear()
+    return
+  }
+  if (f.size > MAX_SIZE) {
+    alert(`El archivo excede el máximo permitido (${prettyBytes(MAX_SIZE)}).`)
+    uploader.value?.clear()
+    return
+  }
+
+  // Solo un archivo: guardamos el primero y limpiamos resto
+  file.value = f
+  // Si FileUpload retiene lista interna, limpiamos la UI para evitar confusión
+  // y dejamos el preview como "fuente de verdad"
+  uploader.value?.clear()
+}
+
+const removeFile = () => {
+  file.value = null
+  uploader.value?.clear()
+}
+
+const validateImport = async () => {
+  if (!file.value) {
+    alert('Seleccione un archivo Excel antes de validar.')
+    return
+  }
+
+  const formData = new FormData()
+  if (selectedCompany.value !== null) {
+    formData.append('company', selectedCompany.value)
+  }
+  formData.append('file_excel_import', file.value)
+
+  try {
+    const res = await fetch('http://localhost:3035/api/pqrs/validateImport', {
+      method: 'POST',
+      body: formData,
+      // credentials: 'include',
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const data = await res.json().catch(() => ({}))
+    console.log('Validación OK:', data)
+    alert('Validación completada correctamente.')
+  } catch (err) {
+    console.error(err)
+    alert('Ocurrió un error al validar la importación.')
+  }
+}
+*/
 </script>
 <template>
 
@@ -239,26 +215,38 @@ const handleSubmit = async () => {
               </template>
               <template #content>
                 <div class="p-text-center">
-                  <Button label="Descargar Plantilla Excel" icon="pi pi-file-excel" severity="secondary"
+                  <Button label="Descargar Plantilla Excel" icon="pi pi-file-excel" severity="info"
                     @click="downloadExcelTemplate" />
                 </div>
               </template>
             </Card>
           </div>
           <div class="card b-2 rounded-lg shadow">
-            <Card class="h-full">
+            <Card>
               <template #header>
-                <div class="p-card-header bold p-2  p-2 bg-gray-100">3. Importar Plantilla Excel</div>
+                <div class="p-card-header bold p-2 bg-gray-100">
+                  3. Cargar e Importar Plantilla Excel
+                </div>
               </template>
+
               <template #content>
-                <div class="p-fluid">
-                  <Dropdown v-if="showCompaniesDropdown" v-model="selectedCompany" :options="companies"
-                    optionLabel="name" optionValue="code" placeholder="Seleccione una compañía" class="p-mb-3" />
+                <div class="flex items-center gap-2">
+                  <!-- Input file oculto -->
+                  <input ref="fileInput" type="file" accept=".xls,.xlsx" class="hidden" @change="onFileChange" />
 
-                  <FileUpload mode="basic" name="file_excel_import[]" url="/api/upload" accept=".xls,.xlsx"
-                    :maxFileSize="1000000" @upload="handleUpload" chooseLabel="Seleccionar Archivo" />
+                  <!-- Botón examinar -->
+                  <Button label="Examinar..." icon="pi pi-folder-open" severity="secondary"
+                    @click="fileInput.click()" />
 
-                  <Button label="Validar Importación" icon="pi pi-check" severity="success" class="p-mt-3"
+                  <!-- Nombre del archivo seleccionado -->
+                  <span class="text-sm">
+                    {{ file ? file.name : 'Ningún archivo seleccionado' }}
+                  </span>
+                </div>
+
+                <!-- Botón validar debajo -->
+                <div class="mt-4">
+                  <Button label="Validar Importación" icon="pi pi-check" severity="success" :disabled="!file"
                     @click="validateImport" />
                 </div>
               </template>

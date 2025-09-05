@@ -49,13 +49,11 @@ export default class PqrsService {
     })
   }
 
-
-  // Obtener la información del paciente
-  getPatientInfo(documentType, documentNumber) {
-    return http.get(`${baseUrl}/turn/private/patient/tipo/${documentType}/numero/${documentNumber}/detalle/`, {
-      headers: {
-        loading: true,
-      },
-    })
+ //Descarga plantila excel
+  getDownloadTemplate() {
+    return http.get(`http://localhost:3035/api/pqrs/getDownloadTemplate/`, {
+      headers: { loading: true },
+      responseType: 'blob',
+    });
   }
 }
