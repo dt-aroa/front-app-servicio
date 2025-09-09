@@ -15,6 +15,7 @@ import Card from 'primevue/card';
 import Column from 'primevue/column';
 import Message from 'primevue/message';
 import DataTable from 'primevue/datatable';
+import Swal from 'sweetalert2'
 
 // Variables de estado
 const pageTitle = ref('Importación de Solicitudes PQRS');
@@ -22,12 +23,15 @@ const loading = ref(false);
 const success = ref(false);
 const errors = ref([]);
 const _PqrsService = new PqrsService()
-
+const errorsRows = ref([]);
+const erroresFile = ref([])    // errores globales de archivo (array de strings)
 
 const _authStore = useAuthStore()
 const cardcode = ref(_authStore._user.cardcode || '')
 const user_id = ref(_authStore._user.id || '')
 const people = _authStore.getPeople
+
+const router = useRouter()
 
 const downloadExcelTemplate = async () => {
   try {
@@ -69,118 +73,49 @@ const validateImport = async () => {
     alert('Debe seleccionar un archivo Excel primero')
     return
   }
-
   const formData = new FormData()
-  //campos de texto remitente
   formData.append('cardcode', (cardcode.value));
   formData.append('user_id', (user_id.value));
   formData.append('file_excel_import', file.value)
 
   try {
-    const res = await fetch('http://localhost:3035/api/pqrs/importPQRS', {
-      method: 'POST',
-      body: formData,
-    })
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    const data = await res.json()
-    console.log('Validación OK:', data)
-    alert('Validación completada correctamente')
+    const result = await _PqrsService.importPqrs(formData);
+
+    if (result.status == 201) {
+      erroresFile.value = []
+      errorsRows.value = []
+
+      if (result.data.errors) {
+        errorsRows.value = result.data.errors;
+        console.error("::::" + result.data.errors);
+      }
+      if (result.data.errorsFile) {
+        erroresFile.value = result.data.errorsFile;
+        console.error("::::" + result.data.errors);
+      }
+
+      if (result.data.inserted > 0) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Importación realizada con éxito',
+          text: `Se importaron ${result.data.inserted} registros`,
+          confirmButtonText: 'Aceptar'
+        }).then((conf) => {
+          if (conf.isConfirmed) {
+            router.push({ name: 'pharmasan.siau.pqrs.inicio' });
+          }
+        });
+      } 
+    }
+
+    console.log('Resultado de la creación de PQRS:', result.data);
+
   } catch (err) {
     console.error(err)
-    alert('Error al validar importación')
+    console.log('Error al validar importación')
   }
 }
 
-/*
-// Datos de ejemplo (ajusta a tu fuente real)
-const companies = ref([
-  { code: 0, name: 'PHARMASAN' },
-  { code: 1, name: 'PHARMEDIS' },
-])
-const selectedCompany = ref(null)
-
-const uploader = ref(null)
-const file = ref(null)
-
-const selectedCompanyLabel = computed(() => {
-  if (!selectedCompany.value) return 'Sin compañía seleccionada'
-  const c = companies.value.find(x => x.code === selectedCompany.value)
-  return c ? `Compañía: ${c.name}` : 'Sin compañía seleccionada'
-})
-
-const canValidate = computed(() => !!file.value /* && selectedCompany.value !== null */
-
-/*
-
-// Helpers
-const prettyBytes = (bytes) => {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
-}
-
-const validExtension = (name) => /\.(xlsx|xls)$/i.test(name)
-
-// Eventos
-const onSelect = (e) => {
-  const f = e.files?.[0]
-  if (!f) return
-
-  // Validaciones
-  if (!validExtension(f.name)) {
-    alert('Formato inválido. Debe ser .xls o .xlsx')
-    // Limpia selección UI
-    uploader.value?.clear()
-    return
-  }
-  if (f.size > MAX_SIZE) {
-    alert(`El archivo excede el máximo permitido (${prettyBytes(MAX_SIZE)}).`)
-    uploader.value?.clear()
-    return
-  }
-
-  // Solo un archivo: guardamos el primero y limpiamos resto
-  file.value = f
-  // Si FileUpload retiene lista interna, limpiamos la UI para evitar confusión
-  // y dejamos el preview como "fuente de verdad"
-  uploader.value?.clear()
-}
-
-const removeFile = () => {
-  file.value = null
-  uploader.value?.clear()
-}
-
-const validateImport = async () => {
-  if (!file.value) {
-    alert('Seleccione un archivo Excel antes de validar.')
-    return
-  }
-
-  const formData = new FormData()
-  if (selectedCompany.value !== null) {
-    formData.append('company', selectedCompany.value)
-  }
-  formData.append('file_excel_import', file.value)
-
-  try {
-    const res = await fetch('http://localhost:3035/api/pqrs/validateImport', {
-      method: 'POST',
-      body: formData,
-      // credentials: 'include',
-    })
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    const data = await res.json().catch(() => ({}))
-    console.log('Validación OK:', data)
-    alert('Validación completada correctamente.')
-  } catch (err) {
-    console.error(err)
-    alert('Ocurrió un error al validar la importación.')
-  }
-}
-*/
 </script>
 <template>
 
@@ -255,6 +190,73 @@ const validateImport = async () => {
         </div>
       </div>
       <div class="p-4">
+        <!-- Errores de archivo -->
+        <div v-if="erroresFile.length" class="mt-4">
+
+          <Card header="Validación de la importación" id="required_fields" class="p-mt-4">
+            <template #header>
+              <div class="p-card-header bold p-2 bg-red-400">
+                <span class="text-white">Validación de la importación</span>
+              </div>
+            </template>
+            <template #content>
+              <p>Errores encontrados en la importación del archivo.</p>
+              <div style="overflow-x: auto;">
+                <table class="table table-bordered" width="100%">
+                  <thead class="bg-grey">
+                    <tr>
+                      <th class="bold">Descripción Error</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(error, index) in erroresFile" :key="index">
+                      <td>{{ error }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </template>
+          </Card>
+        </div>
+
+        <!-- Errores por fila -->
+        <div v-if="errorsRows.length" class="mt-4">
+          <Card header="Validación de la importación" id="required_fields" class="p-mt-4">
+            <template #header>
+              <div class="p-card-header bold p-2 bg-red-400">
+                <span class="text-white">Validación de la importación</span>
+              </div>
+            </template>
+            <template #content>
+              <p>Los siguientes campos son incorrectos y no coinciden con las especificaciones descritas para las
+                columnas en el excel. Por favor resuelva los conflictos y vuelva a subir el importador de excel.</p>
+              <div style="overflow-x: auto;">
+                <table class="table table-bordered" width="100%">
+                  <thead class="bg-grey">
+                    <tr>
+                      <th class="bold">Celda Excel</th>
+                      <th class="bold">Fila</th>
+                      <th class="bold">Nombre Columna Excel</th>
+                      <th class="bold">Valor Ingresado</th>
+                      <th class="bold">Mensaje de Error</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(error, index) in errorsRows" :key="index">
+                      <td><span class="label label-danger">{{ error[0] }}</span></td>
+                      <td><span class="label label-danger">{{ error[1] }}</span></td>
+                      <td>{{ error[2] }}</td>
+                      <td>{{ error[3] }}</td>
+                      <td>{{ error[4] }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </template>
+          </Card>
+        </div>
+      </div>
+      <div class="p-4">
         <div class="p-grid p-justify-center p-nogutter">
           <div class="p-col-12 p-md-4">
           </div>
@@ -283,7 +285,7 @@ const validateImport = async () => {
                 <tr>
                   <td class="text-center"><code>CARGO REMITENTE</code></td>
                   <td class="text-center"><span class="label label-default"> Opcional </span></td>
-                  <td>Cargo del remitente</td>
+                  <td>Cargo del remitente.</td>
                 </tr>
                 <tr>
                   <td class="text-center"><code>EMAIL CONTACTO REMITENTE</code></td>

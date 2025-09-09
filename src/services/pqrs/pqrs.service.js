@@ -51,9 +51,19 @@ export default class PqrsService {
 
  //Descarga plantila excel
   getDownloadTemplate() {
-    return http.get(`http://localhost:3035/api/pqrs/getDownloadTemplate/`, {
+    return http.get(`${baseUrl}/getDownloadTemplate/`, {
       headers: { loading: true },
       responseType: 'blob',
     });
   }
+
+  //importacion de las pqrs
+  importPqrs(body) {
+    return http.post(`${baseUrl}/importPQRS/`, body, {
+      headers: {
+        loading: true,
+      },
+    })
+  }
+
 }

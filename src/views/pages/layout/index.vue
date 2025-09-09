@@ -58,7 +58,7 @@ const items = ref([
       <template #end>
         <div class="flex flex-col sm:flex-row items-center justify-end gap-2 px-2 py-2">
           <p class="text-sm font-medium text-gray-100 whitespace-nowrap">
-            {{ _authStore.getPeople?.full_name }}
+            Bienvenid@,  {{ _authStore.getPeople?.full_name }}
           </p>
           <Button icon="pi pi-power-off" class="p-button-rounded p-button-text custom-logout-button !text-white"
             aria-label="Cerrar sesión" @click="handleLogout" />
