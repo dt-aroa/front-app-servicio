@@ -39,6 +39,14 @@ const routes = [
           title: 'Importación Archivo PQRS',
         },
       },
+      {
+        path: 'pqrs-detail/:id',
+        name: 'pharmasan.siau.pqrs.details', 
+        component: () => import('@/views/pages/pqrs/pqrs-detail.vue'), 
+        meta: {
+          title: 'Detalles de Solicitud PQRS',
+        },
+      },
       // Rutas de error
       {
         path: '401',

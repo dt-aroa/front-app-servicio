@@ -66,4 +66,13 @@ export default class PqrsService {
     })
   }
 
+  // Obtener las pqrs del cliente
+  getDetailPqrs(body) {
+    return http.post(`${baseUrl}/getDetailPqrs/`, body, {
+      headers: {
+        loading: true,
+      },
+    })
+  }
+  
 }
