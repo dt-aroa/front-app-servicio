@@ -36,11 +36,13 @@ const handleLogin = async () => {
 
     const result = await _authStore.login(payload)
 
-    console.error(result);
+    if (result.data.cardcode) {
+      console.log(result.data.cardcode);
+    }
 
     if (result.success) {
       // Redirigir a la página principal
-      await router.push({ path: '/' })
+      router.push({ name: 'pharmasan.siau.pqrs.inicio' });
     } else {
       // El error ya estará manejado por el interceptor de axios
       console.error('Error en login:', result.data)
@@ -62,7 +64,7 @@ const handleLogin = async () => {
 
       <div class="hidden lg:flex w-full lg:w-1/2 items-center justify-center bg-gray-200 p-8">
         <div class="flex flex-col items-center justify-center text-center">
-          <img src="@/assets/images/logo2.png" alt="Logo de la empresa" class="max-w-xs h-auto mb-6" />
+          <img src="@/assets/images/logo-int.png" alt="Logo de la empresa" class="max-w-xs h-auto mb-6" />
           <h2 class="text-gray-800 text-3xl font-extrabold mb-4">¡Bienvenido a <br class="lg:hidden" /> Plataforma
             Clientes!</h2>
           <p class="text-gray-600 text-lg max-w-sm">
@@ -75,7 +77,7 @@ const handleLogin = async () => {
       <div class="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-800">
         <div class="w-full max-w-md">
           <div class="text-center mb-6 ">
-            <img src="@/assets/images/logo-int.png" alt="Logo Empresa" class="mx-auto w-50 h-50 object-contain mb-3" />
+            <img src="@/assets/images/logo2.png" alt="Logo Empresa" class="mx-auto w-50 h-50 object-contain mb-3" />
           </div>
           <h1 class="text-2xl font-bold text-gray-800 text-center mb-6">Iniciar Sesión</h1>
           <form @submit.prevent="handleLogin">

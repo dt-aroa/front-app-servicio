@@ -1,5 +1,12 @@
 @layer global {
   html {
-    font-size: 14px;
+    font-size: 16px;
+    font-family: 'Poppins', sans-serif;
+
   }
 }
+
+.label-content {
+  font-size: 0.9rem!important;
+}
+

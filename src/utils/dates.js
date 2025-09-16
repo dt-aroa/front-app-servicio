@@ -1,8 +1,6 @@
 // src/utils/dateFormat.js
 export function toYMD(input, { utc = false } = {}) {
 
-console.error(input);
-
   if (!input) return null;
 
   // 1) Date

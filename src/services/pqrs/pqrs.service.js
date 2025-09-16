@@ -2,6 +2,7 @@ import http from '@/libs/http'
 
 const baseUrl = `${import.meta.env.VITE_VUE_APP_MICROSERVICE_API_SERVICIOALCLIENTE}`
 
+
 export default class PqrsService {
 
   // Obtener Municipios de un departamento
@@ -24,7 +25,7 @@ export default class PqrsService {
 
   // Obtener información inicial para crear la pqrs 
   getCrearPqrs() {
-    return http.get(`${baseUrl}/crear/crear-pqrs/`, {
+    return http.get(`${baseUrl}/crear-pqrs/`, {
       headers: {
         loading: true,
       },
@@ -74,5 +75,22 @@ export default class PqrsService {
       },
     })
   }
-  
+
+  // Obtener adjunto PQRS en base64
+ getAdjuntoPqrs(body) {
+    return http.post(`${baseUrl}/getAdjuntoPqrs/`, body, {
+      headers: {
+        loading: true,
+      },
+    })
+  }
+
+  // Descargar las pqrs del cliente en archivo excel
+  getPqrsClienteExcel(body) {
+    return http.post(`${baseUrl}/getPqrsClienteExcel/`, body, {
+      headers: { loading: true },
+      responseType: 'blob',
+    });
+  }
+
 }

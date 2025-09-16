@@ -22,3 +22,188 @@
   font-weight:bold;
   font-size:1.5rem;
 }
+
+.label-content {
+  font-size: 0.9rem!important;
+}
+
+.text-title-panel{
+    font-size: 1rem!important;
+    color: #393a3f!important;
+}
+
+.text-subtitle-card{
+    font-size: 0.9rem!important;
+    color: #6078ff!important;
+}
+
+.page-panel-main {
+  justify-content: center;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 1rem;
+/*.items-center 
+  justify-center pt-5 pr-10 pl-10 bg-gray-100*/
+}
+
+.label-form  {
+  color: #585a59 !important;
+  font-size: 0.8rem!important;
+}
+
+.p-select-label {
+  color: #585a59 !important;
+  font-size: 0.8rem!important;
+}
+
+.custom-button-pink {
+    background-color: #ffe4e6; /* light pink background */
+    color: #f43f5e; /* deep pink text */
+    font-weight: bold;
+    border: none;
+    padding: 1rem 1.5rem;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.custom-button-pink:hover {
+    background-color: #fbcfe8;
+}
+
+.custom-button-green {
+    background-color: #d1fae5; /* light green background */
+    color: #059669; /* deep green text */
+    font-weight: bold;
+    border: none;
+    padding: 1rem 1.5rem;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.custom-button-green:hover {
+    background-color: #a7f3d0;
+}
+
+.custom-button-pink {
+  background-color: #fce7f3 !important;
+  /* Rosa pálido */
+  color: #db2777 !important;
+  /* Rosa fuerte */
+  font-weight: bold;
+  border: none !important;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+.custom-button-green {
+  background-color: #f0fdf4 !important;
+  /* Verde pálido */
+  color: #16a34a !important;
+  /* Verde fuerte */
+  font-weight: bold;
+  border: none !important;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+.custom-button-pink:hover {
+  background-color: #ee4ba8 !important;
+  color: #ffffff !important;
+}
+
+.custom-button-green {
+  background-color: #f0fdf4 !important;
+  /* Verde pálido */
+  color: #16a34a !important;
+  /* Verde fuerte */
+  font-weight: bold;
+  border: none !important;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+.custom-button-green:hover {
+  background-color: #50df84 !important;
+  color: #fff !important;
+}
+
+
+.custom-button-blue {
+  background-color: #e3edf7 !important;
+  /* Verde pálido */
+  color: #3492da !important;
+  /* Verde fuerte */
+  font-weight: bold;
+  border: none !important;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+.custom-button-blue:hover {
+  background-color: #5093df !important;
+  color: #fff !important;
+}
+
+.p-paginator-current {
+  font-size: 0.8rem;
+}
+
+
+.status-tag {
+  display: inline-block;
+  padding: 0.5rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.6rem;
+  font-weight: bold;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.tag-abierta {
+  background-color: #fce7f3;
+  /* Rosa pálido */
+  color: #db2777;
+  /* Rosa fuerte */
+}
+
+.tag-cerrada {
+  background-color: #f0fdf4;
+  /* Verde pálido */
+  color: #16a34a;
+  /* Verde fuerte */
+}
+
+.tag-proceso {
+  background-color: #fee2e2;
+  /* Rojo pálido */
+  color: #dc2626;
+  /* Rojo fuerte */
+}
+
+.p-datatable-column-title {
+  color: #585a59 !important;
+}
+
+.p-datatable-thead th .p-column-header-content {
+  display: flex;
+  justify-content: center;
+  text-align: center !important;
+  width: 100%;
+}
+
+.p-datatable-custom .p-datatable-tbody>tr>td {
+  font-size: 0.7rem;
+}
+
+.p-datatable-custom .p-datatable-thead>tr>th {
+  font-size: 0.8rem;
+}
+
+/*
+.p-datatable-thead th .p-column-header-content {
+  display: flex;
+  justify-content: center;
+  text-align: center !important;
+  width: 100%;
+}
+
+.p-datatable-custom .p-datatable-thead>tr>th {
+  font-size: 0.8rem;
+}
+  */

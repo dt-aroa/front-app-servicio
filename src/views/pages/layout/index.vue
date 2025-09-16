@@ -16,7 +16,7 @@ const handleLogout = async () => {
 
 const items = ref([
   {
-    label: "Listado de mis PQRS",
+    label: "Listado de PQRS",
     icon: "pi pi-list",
     command: () => {
       router.push({ name: 'pharmasan.siau.pqrs.inicio' });
@@ -51,7 +51,7 @@ const items = ref([
     }">
       <template #start>
         <div class="flex items-center space-x-3">
-          <img src="@/assets/images/logo-int.png" alt="Logo de Intranet" class="logo-menubar" />
+          <img src="@/assets/images/logo2.png" alt="Logo de Intranet" class="logo-menubar" />
         </div>
       </template>
 
@@ -73,7 +73,7 @@ const items = ref([
 <style>
 /* Texto e íconos del ítem raíz */
 .custom-menubar .p-menubar-item-content {
-  color: #fff !important;
+  color: #9c9595 !important;
   transition: color .15s ease-in-out, background-color .15s ease-in-out, text-shadow .15s ease-in-out;
 }
 
@@ -89,7 +89,7 @@ const items = ref([
 .custom-menubar .p-menubar-item-content:focus,
 .custom-menubar .p-menubar-item-content[data-p-highlight="true"] {
   background-color: rgba(255, 255, 255, 0.08) !important;
-  color: #fff !important;
+ /* color: #fff !important;*/
   text-shadow: 0 0 6px rgba(255, 255, 255, .35);
 }
 
@@ -129,4 +129,9 @@ const items = ref([
   width: auto;
   max-height: 100%;
 }
+
+.p-menubar-item.p-menubar-item-content:focus{
+  color: aquamarine!important;
+}
+
 </style>

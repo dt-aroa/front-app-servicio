@@ -8,7 +8,7 @@ export default async (to, from, next) => {
   const auth = useAuthStore()
 
   // Verificar si tenemos token, pero falta información del usuario
-  if (auth.getToken && (!auth.getUser || !auth.getPeople?.id)) {
+  if (auth.getToken)  {
     try {
       const response = await _AuthService.getUser()
 

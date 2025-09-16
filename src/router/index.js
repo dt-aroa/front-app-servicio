@@ -3,6 +3,7 @@ import authMiddleware from '@/middleware/auth.middleware'
 import checkMiddleware from '@/middleware/check.middleware'
 import securityMiddleware from '@/middleware/security.middleware'
 import routesAuth from '@/router/auth/auth.route.js'
+import pqrsMiddleware from '@/middleware/pqrs.middleware.js'
 
 // Constante para el título por defecto
 const DEFAULT_TITLE = 'PQRS - CLIENTES'
@@ -27,6 +28,7 @@ const routes = [
         path: 'crear-pqrs',
         name: 'pharmasan.siau.pqrs.crear-pqrs',
         component: () => import('@/views/pages/pqrs/create-pqrs.vue'),
+        beforeEnter: [pqrsMiddleware],
         meta: {
           title: 'Crear PQRS',
         },
@@ -35,6 +37,7 @@ const routes = [
         path: 'import-pqrs',
         name: 'pharmasan.siau.pqrs.import-pqrs',
         component: () => import('@/views/pages/pqrs/import-pqrs.vue'),
+        beforeEnter: [pqrsMiddleware],
         meta: {
           title: 'Importación Archivo PQRS',
         },
